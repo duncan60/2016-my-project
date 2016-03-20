@@ -7,5 +7,5 @@ Thumbs.db
 ehthumbs.db
 
 env/
-
+config.py
 *.pyc
