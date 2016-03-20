@@ -2,7 +2,6 @@ from flask import abort, g, session, redirect, url_for, json
 from app import app, api, github
 from flask.ext.restful import Resource
 
-github_access_token = None
 
 @github.access_token_getter
 def token_getter():
@@ -19,8 +18,7 @@ class CallBack(Resource):
 		if oauth_token is None:
 			return redirect(url_for('github-login'))
 
-		github_access_token = oauth_token
-		session['github_access_token'] = github_access_token
+		session['github_access_token'] = oauth_token
 		return {
 			'oauth_token': github_access_token
 		}
