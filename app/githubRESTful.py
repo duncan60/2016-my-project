@@ -1,62 +1,103 @@
 from flask import abort, session, redirect, url_for, json
 from app import app, api, github
 from flask.ext.restful import Resource, reqparse
+import re
 import base64
+
+def responseResult(result):
+    return {
+        'msg'   : 'succeed',
+        'result': result
+    }
 
 @github.access_token_getter
 def token_getter():
-	if session.get('github_access_token', None) is not None :
-		return session.get('github_access_token', None)
+    if session.get('github_access_token', None) is not None :
+        return session.get('github_access_token', None)
 
 class Login(Resource):
-	def get(self):
-		return github.authorize(scope = 'user,public_repo')
+    def get(self):
+        return github.authorize(scope = 'user,public_repo')
 
 class CallBack(Resource):
-	@github.authorized_handler
-	def get(oauth_token, self):
-		if oauth_token is None:
-			return redirect(url_for('github-login'))
-
-		session['github_access_token'] = oauth_token
-		return {
-			'msg': 'login successed !'
-		}
+    @github.authorized_handler
+    def get(oauth_token, self):
+        if oauth_token is None:
+            return redirect(url_for('github-login'))
+        session['github_access_token'] = oauth_token
+        return responseResult({
+                'login': 'login succeed !'
+            }), 201
 
 class GetUser(Resource):
-	def get(self):
-		response = github.get('user')
-		return {
-			'msg'   : 'successed',
-			'result': {
-				'login': response['login']
-			}
-		}, 201
+    def get(self):
+        response = github.get('user')
+        return responseResult({
+                'user': response['login']
+            }), 201
 
 class Repos(Resource):
-	def get(self, login):
-		return github.get('users/' + login + '/repos')
+    def get(self, login):
+        response =  github.get('users/' + login + '/repos')
+        repos = []
+        for repo in response:
+            repos.append(
+                {
+                    'name'   : repo['name'],
+                    'private': repo['private']
+                }
+            )
+        return responseResult({
+                'repos': repos
+            }), 201
 
 class Branchs(Resource):
-	def get(self, user, repo):
-		return github.get('repos/' + user + '/' + repo + '/branches')
+    def get(self, user, repo):
+        response = github.get('repos/' + user + '/' + repo + '/branches')
+        branchs = []
+        for branch in response:
+            branchs.append(
+                {
+                    'name': branch['name'],
+                    'sha' : branch['commit']['sha']
+                }
+            );
+
+        return responseResult({
+                'branchs': branchs
+            }), 201
 
 class TreeFile(Resource):
-	def get(self, user, repo, sha):
-		return github.get('repos/' + user + '/' + repo + '/git/trees/' + sha + '?recursive=1' )
+    def get(self, user, repo, sha):
+        response = github.get('repos/' + user + '/' + repo + '/git/trees/' + sha + '?recursive=1' )
+        files = []
+        for tree in response['tree']:
+            pat='.md'
+            match = re.search(pat, tree['path'])
+            if match is not None:
+                files.append(
+                    {
+                        'url' : tree['url'],
+                        'path': tree['path']
+                    }
+                )
+
+        return responseResult({
+                'files': files
+            }), 201
 
 class File(Resource):
-	def __init__(self):
-	    self.reqparse = reqparse.RequestParser()
-	    self.reqparse.add_argument('path', type = str)
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('path', type = str)
 
-	def get(self):
-		args = self.reqparse.parse_args()
-		response = github.get(args.path)
-		content = base64.b64decode(response['content'])
-		return {
-			'content': content
-		}
+    def get(self):
+        args = self.reqparse.parse_args()
+        response = github.get(args.path)
+        content = base64.b64decode(response['content'])
+        return responseResult({
+                'content': content
+            }), 201
 
 api.add_resource(Login, '/github/login', endpoint = 'github-login')
 api.add_resource(CallBack, '/github/callback', endpoint = 'github-callback')
