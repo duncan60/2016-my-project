@@ -13,7 +13,7 @@ create github developer applications, setting authorization callback URL
 ```
 http://127.0.0.1:5000/github/callback
 ```
-create config file, set value
+create config.py, set value
 ```
 GITHUB_CLIENT_ID = 'your applications ID'
 GITHUB_CLIENT_SECRET = 'your applications secret'
