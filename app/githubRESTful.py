@@ -33,7 +33,11 @@ class GetUser(Resource):
     def get(self):
         response = github.get('user')
         return responseResult({
-                'user': response['login']
+                'user' : response['login'],
+                'id'   : response['id'],
+                'name' : response['name'],
+                'pic'  : 'https://avatars3.githubusercontent.com/u/' + str(response['id']) + '?v=3&s=100',
+                'email': response['email']
             }), 201
 
 class Repos(Resource):
