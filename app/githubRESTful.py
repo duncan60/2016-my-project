@@ -33,16 +33,18 @@ class GetUser(Resource):
     def get(self):
         response = github.get('user')
         return responseResult({
-                'user' : response['login'],
-                'id'   : response['id'],
-                'name' : response['name'],
-                'pic'  : 'https://avatars3.githubusercontent.com/u/' + str(response['id']) + '?v=3&s=100',
-                'email': response['email']
+                'account': {
+                    'user' : response['login'],
+                    'id'   : response['id'],
+                    'name' : response['name'],
+                    'pic'  : 'https://avatars3.githubusercontent.com/u/' + str(response['id']) + '?v=3&s=100',
+                    'email': response['email']
+                }
             }), 201
 
 class Repos(Resource):
-    def get(self, login):
-        response =  github.get('users/' + login + '/repos')
+    def get(self, user):
+        response =  github.get('users/' + user + '/repos')
         repos = []
         for repo in response:
             repos.append(
@@ -72,12 +74,17 @@ class Branchs(Resource):
             }), 201
 
 class TreeFile(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('fe', type = str)
+
     def get(self, user, repo, sha):
+        args = self.reqparse.parse_args()
+        fe = args.fe
         response = github.get('repos/' + user + '/' + repo + '/git/trees/' + sha + '?recursive=1' )
         files = []
         for tree in response['tree']:
-            pat='.md'
-            match = re.search(pat, tree['path'])
+            match = re.search(fe, tree['path'])
             if match is not None:
                 files.append(
                     {
@@ -93,11 +100,11 @@ class TreeFile(Resource):
 class File(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('path', type = str)
+        self.reqparse.add_argument('url', type = str)
 
     def get(self):
         args = self.reqparse.parse_args()
-        response = github.get(args.path)
+        response = github.get(args.url)
         content = base64.b64decode(response['content'])
         return responseResult({
                 'content': content
@@ -106,7 +113,7 @@ class File(Resource):
 api.add_resource(Login, '/github/login', endpoint = 'github-login')
 api.add_resource(CallBack, '/github/callback', endpoint = 'github-callback')
 api.add_resource(GetUser, '/github/user', endpoint = 'github-user')
-api.add_resource(Repos, '/github/repos/<login>', endpoint = 'github-repos')
+api.add_resource(Repos, '/github/repos/<user>', endpoint = 'github-repos')
 api.add_resource(Branchs, '/github/branchs/<user>/<repo>', endpoint = 'github-branch')
 api.add_resource(TreeFile, '/github/tree_file/<user>/<repo>/<sha>', endpoint = 'github-tree-file')
 api.add_resource(File, '/github/file', endpoint = 'github-file')

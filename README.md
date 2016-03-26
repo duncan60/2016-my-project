@@ -1,5 +1,5 @@
 # flask-github-api
-use flask connect github api 
+use flask RESTful connect github api data
 
 ## Installation
 After cloning, create a virtual environment and install the requirements. For Linux and Mac users:
@@ -9,7 +9,7 @@ $ virtualenv env
 $ . env/bin/activate
 (venv) $ pip install -r requirements.txt
 ```
-create github developer applications, setting authorization callback URL 
+create github developer applications, setting authorization callback URL
 ```
 http://127.0.0.1:5000/github/callback
 ```
@@ -28,25 +28,68 @@ $ . env/bin/activate
 ```
 
 ## RESTful-APIs
+
+#### github authorizing users
 ```
-# github connect login
 # get /github/login
-
-# github loging succeed callback
+# response result:
+account:{
+    email: "your email",
+    pic  : "your picture",
+    user : "your account",
+    name : "your name",
+    id   : "your id"
+}
+```
+#### github authorizing succeed callback
+```
 # get /github/callback
-
-# github user info
-# get /github/user
-
-# repositories list
-# get /github/repos/<login>
-
-# a repository has all branch
+# response result:
+{
+    login: "login succeed !"
+}
+```
+#### repositories list
+```
+# get /github/repos/<user>
+# response result:
+repos:[
+    {
+        name   : "repositorie name",
+        private: false or name
+    },
+    ...more
+]
+```
+#### a repository has all branch
+```
 # get /github/branchs/<user>/<repo>
-
-# a repository branch has all file info
-# get /github/tree_file/<user>/<repo>/<sha>
-
-# a .md file content
-# get /github/file?path=<md path>
+# response result:
+branchs:[
+    {
+        name: "branch name",
+        sha : "commit sha"
+    },
+    ...more
+]
+```
+#### a repository branch has all file info
+```
+# get /github/tree_file/<user>/<repo>/<sha>?fe=<filename extension>
+# response result:
+files:[
+    {
+        url : "file url",
+        path: "file path"
+    },
+    ...more
+]
+```
+#### a file content
+```
+# get /github/file?url=<file url>
+# response result:
+{
+    content: "file content"
+}
 ```
